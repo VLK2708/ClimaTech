@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ClimaTech - Sistema de Gestión</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0a0e1a;--bg2:#0f1629;--bg3:#161d35;--surface:#1a2240;--surface2:#1e2a4a;--border:#2a3a5c;--border2:#334466;--text:#e8edf8;--text2:#8899bb;--text3:#556688;--accent:#00d4ff;--accent2:#0099dd;--green:#00e5a0;--yellow:#ffb800;--red:#ff4466;--orange:#ff8800;--purple:#8866ff;--radius:12px;--radius-sm:8px;--shadow:0 4px 24px rgba(0,0,0,0.4);--font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace;--tr:0.2s ease}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.app-layout{display:flex;min-height:100vh}
+.main-content{flex:1;margin-left:260px;padding:32px;max-width:calc(100vw - 260px)}
+@media(max-width:900px){.main-content{margin-left:0;max-width:100vw;padding:16px}}
+.sidebar{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;overflow-y:auto}
+.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
+.sidebar-logo h1{font-size:22px;font-weight:700;color:var(--accent)}
+.sidebar-logo span{color:var(--text2);font-size:12px;display:block;margin-top:2px}
+.sidebar-nav{flex:1;padding:16px 12px}
+.nav-section{margin-bottom:24px}
+.nav-section-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding:0 12px;margin-bottom:6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);color:var(--text2);font-size:14px;font-weight:500;transition:all var(--tr);cursor:pointer;border:none;background:none;width:100%;text-align:left;font-family:var(--font)}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:rgba(0,212,255,0.1);color:var(--accent)}
+.nav-item .icon{font-size:18px;width:20px;text-align:center}
+.sidebar-footer{padding:16px 12px;border-top:1px solid var(--border)}
+.user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--surface)}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--bg);flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:11px;color:var(--text3)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;display:flex;align-items:center;gap:16px;transition:all var(--tr)}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.stat-value{font-size:28px;font-weight:700;line-height:1}
+.stat-label{font-size:13px;color:var(--text2);margin-top:4px}
+.grid{display:grid;gap:20px}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:1100px){.grid-3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius-sm);font-family:var(--font);font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all var(--tr);white-space:nowrap}
+.btn-primary{background:var(--accent);color:var(--bg)}.btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--accent);border:1px solid var(--accent)}.btn-outline:hover{background:rgba(0,212,255,0.1)}
+.btn-danger{background:rgba(255,68,102,.15);color:var(--red);border:1px solid rgba(255,68,102,.3)}.btn-danger:hover{background:rgba(255,68,102,.25)}
+.btn-success{background:rgba(0,229,160,.15);color:var(--green);border:1px solid rgba(0,229,160,.3)}
+.btn-sm{padding:6px 12px;font-size:12px}.btn-lg{padding:12px 28px;font-size:16px}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.w-full{width:100%}
+.form-group{margin-bottom:18px}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.form-control{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:border-color var(--tr)}
+.form-control:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.1)}
+.form-control::placeholder{color:var(--text3)}
+select.form-control option{background:var(--bg3)}
+textarea.form-control{resize:vertical;min-height:90px}
+.table-wrapper{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--bg3)}
+thead th{padding:12px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background var(--tr)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+tbody td{padding:13px 16px;font-size:14px;vertical-align:middle}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-pendiente{background:rgba(255,184,0,.15);color:var(--yellow)}
+.badge-en_proceso{background:rgba(0,212,255,.15);color:var(--accent)}
+.badge-completada{background:rgba(0,229,160,.15);color:var(--green)}
+.badge-cancelada{background:rgba(255,68,102,.15);color:var(--red)}
+.badge-admin{background:rgba(136,102,255,.15);color:var(--purple)}
+.badge-tecnico{background:rgba(0,212,255,.15);color:var(--accent)}
+.badge-cliente{background:rgba(0,229,160,.15);color:var(--green)}
+.badge-preventivo{background:rgba(0,229,160,.15);color:var(--green)}
+.badge-correctivo{background:rgba(255,136,0,.15);color:var(--orange)}
+.badge-borrador{background:rgba(85,102,136,.2);color:var(--text2)}
+.badge-enviada{background:rgba(0,212,255,.15);color:var(--accent)}
+.badge-aprobada{background:rgba(0,229,160,.15);color:var(--green)}
+.badge-rechazada{background:rgba(255,68,102,.15);color:var(--red)}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
+.page-title{font-size:24px;font-weight:700}
+.page-subtitle{font-size:14px;color:var(--text2);margin-top:2px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;animation:fadeIn .15s ease}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;animation:slideUp .2s ease}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:18px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;padding:4px;border-radius:4px}
+.modal-close:hover{color:var(--text);background:var(--surface)}
+.modal-body{padding:24px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--border)}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.loading-page{display:flex;align-items:center;justify-content:center;min-height:300px;flex-direction:column;gap:12px;color:var(--text2)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty-state .icon{font-size:48px;margin-bottom:16px;opacity:.5}
+.empty-state h3{font-size:18px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.alert{padding:12px 16px;border-radius:var(--radius-sm);font-size:14px;margin-bottom:16px}
+.alert-error{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:var(--red)}
+.text-accent{color:var(--accent)}.text-muted{color:var(--text2)}.text-sm{font-size:13px}.font-mono{font-family:var(--mono)}.mb-6{margin-bottom:24px}
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden}
+.login-page::before{content:'';position:absolute;top:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.05) 0%,transparent 70%)}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:48px;width:100%;max-width:420px;position:relative;z-index:1;animation:slideUp .3s ease}
+.login-logo{text-align:center;margin-bottom:36px}
+.login-logo h1{font-size:32px;font-weight:800;color:var(--accent)}
+.login-logo p{color:var(--text2);font-size:14px;margin-top:4px}
+.demo-users{margin-top:20px;padding:14px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.demo-users p{font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.demo-user{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.demo-user:last-child{border-bottom:none}
+.demo-user span{font-size:12px;color:var(--text2)}
+.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;animation:slideUp .2s ease;display:flex;align-items:center;gap:8px;min-width:240px;box-shadow:var(--shadow)}
+.toast-success{background:#1a2240;border:1px solid rgba(0,229,160,.4);color:var(--green)}
+.toast-error{background:#1a2240;border:1px solid rgba(255,68,102,.4);color:var(--red)}
+.toast-info{background:#1a2240;border:1px solid var(--border2);color:var(--text)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useContext, createContext, useRef, useCallback } = React;
+
+// ─── CONFIG ─────────────────────────────────────────────────────────────────
+// ⚠️ Cambia esta URL si tu backend corre en otro puerto
+const API_URL = 'http://localhost:3001/api';
+
+// ─── AXIOS ──────────────────────────────────────────────────────────────────
+const api = axios.create({ baseURL: API_URL });
+api.interceptors.request.use(c => { const t=localStorage.getItem('ct_token'); if(t) c.headers.Authorization=`Bearer ${t}`; return c; });
+api.interceptors.response.use(r=>r, err => { if(err.response?.status===401){localStorage.clear();window.location.reload();} return Promise.reject(err); });
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+let _addToast = null;
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  _addToast = useCallback((msg, type='info') => {
+    const id = Date.now();
+    setToasts(p=>[...p,{id,msg,type}]);
+    setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),3000);
+  },[]);
+  return <>
+    {children}
+    <div className="toast-container">
+      {toasts.map(t=><div key={t.id} className={`toast toast-${t.type}`}>{t.type==='success'?'✅':t.type==='error'?'❌':'ℹ️'} {t.msg}</div>)}
+    </div>
+  </>;
+}
+const toast = { success: m=>_addToast?.(m,'success'), error: m=>_addToast?.(m,'error'), info: m=>_addToast?.(m,'info') };
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+const AuthCtx = createContext(null);
+function AuthProvider({ children }) {
+  const [usuario, setUsuario] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(()=>{
+    const t=localStorage.getItem('ct_token'), u=localStorage.getItem('ct_user');
+    if(t&&u){ try{setUsuario(JSON.parse(u));}catch{localStorage.clear();} }
+    setLoading(false);
+  },[]);
+  const login = (token,u) => { localStorage.setItem('ct_token',token); localStorage.setItem('ct_user',JSON.stringify(u)); setUsuario(u); };
+  const logout = () => { localStorage.clear(); setUsuario(null); };
+  return <AuthCtx.Provider value={{usuario,login,logout,loading}}>{children}</AuthCtx.Provider>;
+}
+const useAuth = () => useContext(AuthCtx);
+
+// ─── ROUTER (hash) ────────────────────────────────────────────────────────────
+function useRoute() {
+  const [page, setPage] = useState(()=>location.hash.replace('#','')||'dashboard');
+  useEffect(()=>{ const h=()=>setPage(location.hash.replace('#','')||'dashboard'); window.addEventListener('hashchange',h); return()=>window.removeEventListener('hashchange',h); },[]);
+  return { page, go: p=>{ location.hash=p; } };
+}
+
+// ─── SHARED COMPONENTS ───────────────────────────────────────────────────────
+function Loading() { return <div className="loading-page"><div className="spinner"/><span>Cargando...</span></div>; }
+function Empty({icon,text}) { return <div className="empty-state"><div className="icon">{icon}</div><h3>{text}</h3></div>; }
+
+function Modal({ title, onClose, children, footer, wide }) {
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={wide?{maxWidth:640}:{}}>
+        <div className="modal-header"><span className="modal-title">{title}</span><button className="modal-close" onClick={onClose}>✕</button></div>
+        <div className="modal-body">{children}</div>
+        {footer&&<div className="modal-footer">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── SIDEBAR ─────────────────────────────────────────────────────────────────
+const MENUS = {
+  admin:[
+    {section:'Principal',items:[{p:'dashboard',icon:'📊',label:'Dashboard'},{p:'ordenes',icon:'📋',label:'Órdenes'}]},
+    {section:'Gestión',items:[{p:'clientes',icon:'👥',label:'Clientes'},{p:'tecnicos',icon:'🔧',label:'Técnicos'},{p:'equipos',icon:'❄️',label:'Equipos'}]},
+    {section:'Operaciones',items:[{p:'mantenimientos',icon:'🛠️',label:'Mantenimientos'},{p:'repuestos',icon:'⚙️',label:'Repuestos'},{p:'cotizaciones',icon:'💰',label:'Cotizaciones'}]},
+  ],
+  tecnico:[{section:'Mi Trabajo',items:[{p:'ordenes',icon:'📋',label:'Mis Órdenes'},{p:'mantenimientos',icon:'🛠️',label:'Mantenimientos'}]}],
+  cliente:[{section:'Mi Cuenta',items:[{p:'ordenes',icon:'📋',label:'Mis Solicitudes'},{p:'equipos',icon:'❄️',label:'Mis Equipos'},{p:'cotizaciones',icon:'💰',label:'Cotizaciones'}]}],
+};
+const ROLE_LABEL={admin:'Administrador',tecnico:'Técnico',cliente:'Cliente'};
+
+function Sidebar({page,go}) {
+  const {usuario,logout}=useAuth();
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-logo"><h1>❄ ClimaTech</h1><span>Sistema de Gestión</span></div>
+      <nav className="sidebar-nav">
+        {(MENUS[usuario?.rol]||[]).map(sec=>(
+          <div key={sec.section} className="nav-section">
+            <div className="nav-section-title">{sec.section}</div>
+            {sec.items.map(it=>(
+              <button key={it.p} className={`nav-item${page===it.p?' active':''}`} onClick={()=>go(it.p)}>
+                <span className="icon">{it.icon}</span>{it.label}
+              </button>
+            ))}
+          </div>
+        ))}
+      </nav>
+      <div className="sidebar-footer">
+        <div className="user-card">
+          <div className="user-avatar">{usuario?.nombre?.[0]?.toUpperCase()}</div>
+          <div className="user-info"><div className="user-name">{usuario?.nombre}</div><div className="user-role">{ROLE_LABEL[usuario?.rol]}</div></div>
+        </div>
+        <button className="nav-item" style={{marginTop:8,color:'var(--red)'}} onClick={()=>{logout();toast.success('Sesión cerrada');}}>
+          <span className="icon">🚪</span>Cerrar Sesión
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+const DEMOS=[{label:'Admin',email:'admin@climatech.com',pass:'password123',rol:'admin'},{label:'Técnico',email:'tecnico@climatech.com',pass:'password123',rol:'tecnico'},{label:'Cliente',email:'cliente@climatech.com',pass:'password123',rol:'cliente'}];
+function LoginPage() {
+  const [form,setForm]=useState({email:'',contrasena:''});
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState('');
+  const {login}=useAuth();
+  const submit=async e=>{
+    e.preventDefault(); setError(''); setLoading(true);
+    try{ const {data}=await api.post('/auth/login',form); if(data.ok){login(data.token,data.usuario);toast.success(`Bienvenido, ${data.usuario.nombre}`);location.hash='dashboard';} }
+    catch(err){ setError(err.response?.data?.mensaje||'Error al iniciar sesión. Verifica que el backend esté corriendo en '+API_URL); }
+    finally{setLoading(false);}
+  };
+  return (
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-logo"><h1>❄ ClimaTech</h1><p>Sistema de Gestión de Climatización</p></div>
+        {error&&<div className="alert alert-error">{error}</div>}
+        <form onSubmit={submit}>
+          <div className="form-group"><label className="form-label">Correo Electrónico</label><input type="email" className="form-control" placeholder="tu@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} required/></div>
+          <div className="form-group"><label className="form-label">Contraseña</label><input type="password" className="form-control" placeholder="••••••••" value={form.contrasena} onChange={e=>setForm({...form,contrasena:e.target.value})} required/></div>
+          <button type="submit" className="btn btn-primary w-full btn-lg" disabled={loading}>{loading?<><span className="spinner" style={{width:16,height:16}}/> Ingresando...</>:'Iniciar Sesión'}</button>
+        </form>
+        <div className="demo-users">
+          <p>Usuarios de prueba</p>
+          {DEMOS.map(d=>(
+            <div key={d.rol} className="demo-user">
+              <span><span className={`badge badge-${d.rol}`}>{d.label}</span> {d.email}</span>
+              <button className="btn btn-outline btn-sm" onClick={()=>{setForm({email:d.email,contrasena:d.pass});setError('');}}>Usar</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function DashboardPage() {
+  const [data,setData]=useState(null); const [loading,setLoading]=useState(true);
+  const donutRef=useRef(null); const barRef=useRef(null);
+  const charts=useRef({});
+  useEffect(()=>{ api.get('/dashboard').then(r=>setData(r.data.data)).catch(()=>toast.error('Error cargando dashboard')).finally(()=>setLoading(false)); },[]);
+  useEffect(()=>{
+    if(!data) return;
+    const {estadisticasEstado,tecnicosTop}=data;
+    if(donutRef.current){
+      if(charts.current.donut) charts.current.donut.destroy();
+      charts.current.donut=new Chart(donutRef.current,{type:'doughnut',data:{labels:estadisticasEstado.map(e=>e.estado),datasets:[{data:estadisticasEstado.map(e=>e.cantidad),backgroundColor:estadisticasEstado.map(e=>e.color),borderWidth:0}]},options:{responsive:true,plugins:{legend:{labels:{color:'#8899bb',font:{family:'Sora'}}}}}});
+    }
+    if(barRef.current&&tecnicosTop.length){
+      if(charts.current.bar) charts.current.bar.destroy();
+      charts.current.bar=new Chart(barRef.current,{type:'bar',data:{labels:tecnicosTop.map(t=>t.tecnico?.nombre||'N/A'),datasets:[{label:'Órdenes',data:tecnicosTop.map(t=>parseInt(t.total_ordenes||0)),backgroundColor:'rgba(0,212,255,0.6)',borderColor:'rgba(0,212,255,1)',borderWidth:1,borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8899bb'}},y:{ticks:{color:'#8899bb'},grid:{color:'#2a3a5c'}}}}});
+    }
+    return()=>{ Object.values(charts.current).forEach(c=>c.destroy()); charts.current={}; };
+  },[data]);
+  if(loading) return <Loading/>;
+  if(!data) return null;
+  const {resumen,ordenesRecientes}=data;
+  const STATS=[{label:'Clientes',value:resumen.totalClientes,icon:'👥',color:'rgba(136,102,255,0.2)'},{label:'Técnicos',value:resumen.totalTecnicos,icon:'🔧',color:'rgba(0,212,255,0.2)'},{label:'Equipos',value:resumen.totalEquipos,icon:'❄️',color:'rgba(0,229,160,0.2)'},{label:'Total Órdenes',value:resumen.totalOrdenes,icon:'📋',color:'rgba(255,184,0,0.2)'},{label:'Mantenimientos',value:resumen.totalMantenimientos,icon:'🛠️',color:'rgba(255,136,0,0.2)'},{label:'Cotiz. Aprobadas',value:resumen.cotizacionesAprobadas,icon:'💰',color:'rgba(0,229,160,0.2)'}];
+  return (
+    <div>
+      <div className="page-header"><div><h2 className="page-title">Dashboard</h2><p className="page-subtitle">Resumen general del sistema</p></div></div>
+      <div className="grid grid-3 mb-6">{STATS.map(s=><div key={s.label} className="stat-card"><div className="stat-icon" style={{background:s.color}}>{s.icon}</div><div><div className="stat-value">{s.value}</div><div className="stat-label">{s.label}</div></div></div>)}</div>
+      <div className="grid grid-2 mb-6">
+        <div className="card"><h3 style={{marginBottom:20,fontSize:16}}>Estado de Órdenes</h3><canvas ref={donutRef}/></div>
+        <div className="card"><h3 style={{marginBottom:20,fontSize:16}}>Top Técnicos por Órdenes</h3><canvas ref={barRef}/></div>
+      </div>
+      <div className="card">
+        <h3 style={{marginBottom:20,fontSize:16}}>Órdenes Recientes</h3>
+        {!ordenesRecientes.length?<Empty icon="📋" text="Sin órdenes recientes"/>:(
+          <div className="table-wrapper"><table>
+            <thead><tr><th>#</th><th>Cliente</th><th>Equipo</th><th>Técnico</th><th>Estado</th><th>Fecha</th></tr></thead>
+            <tbody>{ordenesRecientes.map(o=><tr key={o.id}><td className="font-mono text-accent">#{o.id}</td><td>{o.cliente?.nombre||'—'}</td><td>{o.equipo?`${o.equipo.marca||''} ${o.equipo.tipo}`:'—'}</td><td>{o.tecnico?.nombre||<span className="text-muted">Sin asignar</span>}</td><td><span className={`badge badge-${o.estado}`}>{o.estado}</span></td><td className="text-muted text-sm">{o.fecha}</td></tr>)}</tbody>
+          </table></div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── CRUD TABLE (generic) ────────────────────────────────────────────────────
+function CrudTable({title,icon,endpoint,cols,FormComp,canWrite=true,extraUrls=[]}) {
+  const [rows,setRows]=useState([]); const [extras,setExtras]=useState({}); const [loading,setLoading]=useState(true);
+  const [modal,setModal]=useState(false); const [editing,setEditing]=useState(null);
+  const load=useCallback(async()=>{
+    setLoading(true);
+    try{
+      const res=await Promise.all([api.get(endpoint),...extraUrls.map(e=>api.get(e.url))]);
+      setRows(res[0].data.data||[]);
+      const ex={}; extraUrls.forEach((e,i)=>{ex[e.key]=res[i+1].data.data||[];}); setExtras(ex);
+    }catch{toast.error('Error cargando datos');}finally{setLoading(false);}
+  },[endpoint]);
+  useEffect(()=>{load();},[load]);
+  const del=async id=>{ if(!confirm('¿Eliminar?'))return; try{await api.delete(`${endpoint}/${id}`);toast.success('Eliminado');load();}catch{toast.error('No se puede eliminar');} };
+  return (
+    <div>
+      <div className="page-header"><div><h2 className="page-title">{icon} {title}</h2><p className="page-subtitle">{rows.length} registros</p></div>{canWrite&&<button className="btn btn-primary" onClick={()=>{setEditing(null);setModal(true);}}>+ Nuevo</button>}</div>
+      {loading?<Loading/>:(
+        <div className="card" style={{padding:0}}>
+          {!rows.length?<Empty icon={icon} text={`Sin ${title.toLowerCase()}`}/>:(
+            <div className="table-wrapper"><table>
+              <thead><tr>{cols.map(c=><th key={c.k}>{c.l}</th>)}{canWrite&&<th>Acciones</th>}</tr></thead>
+              <tbody>{rows.map(r=>(
+                <tr key={r.id}>
+                  {cols.map(c=><td key={c.k}>{c.r?c.r(r):(r[c.k]||<span className="text-muted">—</span>)}</td>)}
+                  {canWrite&&<td><div style={{display:'flex',gap:6}}>
+                    <button className="btn btn-outline btn-sm" onClick={()=>{setEditing(r);setModal(true);}}>✏️</button>
+                    <button className="btn btn-danger btn-sm" onClick={()=>del(r.id)}>🗑️</button>
+                  </div></td>}
+                </tr>
+              ))}</tbody>
+            </table></div>
+          )}
+        </div>
+      )}
+      {modal&&<FormComp editing={editing} extras={extras} endpoint={endpoint} onClose={()=>setModal(false)} onSaved={()=>{setModal(false);load();}}/>}
+    </div>
+  );
+}
+
+// ─── CLIENTES ─────────────────────────────────────────────────────────────────
+function ClienteForm({editing,onClose,onSaved}) {
+  const [f,setF]=useState({nombre:editing?.nombre||'',telefono:editing?.telefono||'',direccion:editing?.direccion||'',email:'',contrasena:''});
+  const [saving,setSaving]=useState(false);
+  const save=async()=>{ if(!f.nombre.trim())return toast.error('Nombre requerido'); setSaving(true); try{ editing?await api.put(`/clientes/${editing.id}`,{nombre:f.nombre,telefono:f.telefono,direccion:f.direccion}):await api.post('/clientes',f); toast.success(editing?'Actualizado':'Creado'); onSaved(); }catch(e){toast.error(e.response?.data?.mensaje||'Error');}finally{setSaving(false);} };
+  return <Modal title={editing?'Editar Cliente':'Nuevo Cliente'} onClose={onClose} footer={<><button className="btn btn-outline" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Guardando...':'Guardar'}</button></>}>
+    <div className="form-group"><label className="form-label">Nombre *</label><input className="form-control" value={f.nombre} onChange={e=>setF({...f,nombre:e.target.value})} placeholder="Nombre completo"/></div>
+    <div className="form-group"><label className="form-label">Teléfono</label><input className="form-control" value={f.telefono} onChange={e=>setF({...f,telefono:e.target.value})}/></div>
+    <div className="form-group"><label className="form-label">Dirección</label><input className="form-control" value={f.direccion} onChange={e=>setF({...f,direccion:e.target.value})}/></div>
+    {!editing&&<><div className="form-group"><label className="form-label">Email (acceso al sistema)</label><input type="email" className="form-control" value={f.email} onChange={e=>setF({...f,email:e.target.value})}/></div><div className="form-group"><label className="form-label">Contraseña</label><input type="password" className="form-control" value={f.contrasena} onChange={e=>setF({...f,contrasena:e.target.value})}/></div></>}
+  </Modal>;
+}
+function ClientesPage() {
+  return <CrudTable title="Clientes" icon="👥" endpoint="/clientes" FormComp={ClienteForm}
+    cols={[{k:'id',l:'#',r:r=><span className="font-mono text-accent">{r.id}</span>},{k:'nombre',l:'Nombre',r:r=><strong>{r.nombre}</strong>},{k:'telefono',l:'Teléfono'},{k:'direccion',l:'Dirección',r:r=><span className="text-sm">{r.direccion||'—'}</span>},{k:'email',l:'Email',r:r=><span className="text-sm">{r.usuario?.email||'Sin cuenta'}</span>},{k:'estado',l:'Estado',r:r=><span className={`badge ${r.usuario?.activo?'badge-completada':'badge-cancelada'}`}>{r.usuario?.activo?'Activo':'Sin cuenta'}</span>}]}
+  />;
+}
+
+// ─── TÉCNICOS ─────────────────────────────────────────────────────────────────
+function TecnicoForm({editing,onClose,onSaved}) {
+  const [f,setF]=useState({nombre:editing?.nombre||'',especialidad:editing?.especialidad||'',telefono:editing?.telefono||'',email:'',contrasena:''});
+  const [saving,setSaving]=useState(false);
+  const save=async()=>{ if(!f.nombre.trim())return toast.error('Nombre requerido'); setSaving(true); try{ editing?await api.put(`/tecnicos/${editing.id}`,{nombre:f.nombre,especialidad:f.especialidad,telefono:f.telefono}):await api.post('/tecnicos',f); toast.success(editing?'Actualizado':'Creado'); onSaved(); }catch(e){toast.error(e.response?.data?.mensaje||'Error');}finally{setSaving(false);} };
+  return <Modal title={editing?'Editar Técnico':'Nuevo Técnico'} onClose={onClose} footer={<><button className="btn btn-outline" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Guardando...':'Guardar'}</button></>}>
+    <div className="form-group"><label className="form-label">Nombre *</label><input className="form-control" value={f.nombre} onChange={e=>setF({...f,nombre:e.target.value})}/></div>
+    <div className="form-group"><label className="form-label">Especialidad</label><input className="form-control" value={f.especialidad} onChange={e=>setF({...f,especialidad:e.target.value})} placeholder="Aires acondicionados split"/></div>
+    <div className="form-group"><label className="form-label">Teléfono</label><input className="form-control" value={f.telefono} onChange={e=>setF({...f,telefono:e.target.value})}/></div>
+    {!editing&&<><div className="form-group"><label className="form-label">Email</label><input type="email" className="form-control" value={f.email} onChange={e=>setF({...f,email:e.target.value})}/></div><div className="form-group"><label className="form-label">Contraseña</label><input type="password" className="form-control" value={f.contrasena} onChange={e=>setF({...f,contrasena:e.target.value})}/></div></>}
+  </Modal>;
+}
+function TecnicosPage() {
+  return <CrudTable title="Técnicos" icon="🔧" endpoint="/tecnicos" FormComp={TecnicoForm}
+    cols={[{k:'id',l:'#',r:r=><span className="font-mono text-accent">{r.id}</span>},{k:'nombre',l:'Nombre',r:r=><strong>{r.nombre}</strong>},{k:'especialidad',l:'Especialidad'},{k:'telefono',l:'Teléfono'},{k:'email',l:'Email',r:r=><span className="text-sm">{r.usuario?.email||'Sin cuenta'}</span>}]}
+  />;
+}
+
+// ─── EQUIPOS ──────────────────────────────────────────────────────────────────
+function EquipoForm({editing,extras,onClose,onSaved}) {
+  const [f,setF]=useState({tipo:editing?.tipo||'',marca:editing?.marca||'',modelo:editing?.modelo||'',numero_serie:editing?.numero_serie||'',cliente_id:editing?.cliente_id||''});
+  const [saving,setSaving]=useState(false);
+  const save=async()=>{ if(!f.tipo||!f.cliente_id)return toast.error('Tipo y cliente requeridos'); setSaving(true); try{ editing?await api.put(`/equipos/${editing.id}`,f):await api.post('/equipos',f); toast.success(editing?'Actualizado':'Registrado'); onSaved(); }catch(e){toast.error(e.response?.data?.mensaje||'Error');}finally{setSaving(false);} };
+  return <Modal title={editing?'Editar Equipo':'Nuevo Equipo'} onClose={onClose} footer={<><button className="btn btn-outline" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Guardando...':'Guardar'}</button></>}>
+    <div className="form-group"><label className="form-label">Tipo *</label><input className="form-control" value={f.tipo} onChange={e=>setF({...f,tipo:e.target.value})} placeholder="Aire Acondicionado Split"/></div>
+    <div className="grid grid-2"><div className="form-group"><label className="form-label">Marca</label><input className="form-control" value={f.marca} onChange={e=>setF({...f,marca:e.target.value})}/></div><div className="form-group"><label className="form-label">Modelo</label><input className="form-control" value={f.modelo} onChange={e=>setF({...f,modelo:e.target.value})}/></div></div>
+    <div className="form-group"><label className="form-label">N° Serie</label><input className="form-control" value={f.numero_serie} onChange={e=>setF({...f,numero_serie:e.target.value})}/></div>
+    <div className="form-group"><label className="form-label">Cliente *</label><select className="form-control" value={f.cliente_id} onChange={e=>setF({...f,cliente_id:e.target.value})}><option value="">Seleccionar</option>{(extras.clientes||[]).map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>
+  </Modal>;
+}
+function EquiposPage() {
+  const {usuario}=useAuth(); const isAdmin=usuario?.rol==='admin';
+  return <CrudTable title="Equipos" icon="❄️" endpoint="/equipos" FormComp={EquipoForm} canWrite={isAdmin}
+    extraUrls={isAdmin?[{url:'/clientes',key:'clientes'}]:[]}
+    cols={[{k:'id',l:'#',r:r=><span className="font-mono text-accent">{r.id}</span>},{k:'tipo',l:'Tipo',r:r=><strong>{r.tipo}</strong>},{k:'marca',l:'Marca'},{k:'modelo',l:'Modelo'},{k:'numero_serie',l:'N° Serie',r:r=><span className="font-mono text-sm">{r.numero_serie||'—'}</span>},{k:'cliente',l:'Cliente',r:r=>r.cliente?.nombre||'—'}]}
+  />;
+}
+
+// ─── ÓRDENES ──────────────────────────────────────────────────────────────────
+const ESTADOS=['pendiente','en_proceso','completada','cancelada'];
+function OrdenForm({editing,extras,onClose,onSaved}) {
+  const today=new Date().toISOString().split('T')[0];
+  const [f,setF]=useState({fecha:editing?.fecha||today,fecha_programada:editing?.fecha_programada||'',descripcion:editing?.descripcion||'',prioridad:editing?.prioridad||'media',cliente_id:editing?.cliente_id||'',tecnico_id:editing?.tecnico_id||'',equipo_id:editing?.equipo_id||''});
+  const [saving,setSaving]=useState(false);
+  const eqFilt=f.cliente_id?(extras.equipos||[]).filter(e=>String(e.cliente_id)===String(f.cliente_id)):(extras.equipos||[]);
+  const save=async()=>{ if(!f.fecha||!f.cliente_id||!f.equipo_id)return toast.error('Fecha, cliente y equipo requeridos'); setSaving(true); try{ editing?await api.put(`/ordenes/${editing.id}`,f):await api.post('/ordenes',f); toast.success(editing?'Actualizada':'Creada'); onSaved(); }catch(e){toast.error(e.response?.data?.mensaje||'Error');}finally{setSaving(false);} };
+  return <Modal title={editing?'Editar Orden':'Nueva Orden'} onClose={onClose} wide footer={<><button className="btn btn-outline" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Guardando...':'Guardar'}</button></>}>
+    <div className="grid grid-2"><div className="form-group"><label className="form-label">Fecha *</label><input type="date" className="form-control" value={f.fecha} onChange={e=>setF({...f,fecha:e.target.value})}/></div><div className="form-group"><label className="form-label">Fecha programada</label><input type="date" className="form-control" value={f.fecha_programada} onChange={e=>setF({...f,fecha_programada:e.target.value})}/></div></div>
+    <div className="form-group"><label className="form-label">Cliente *</label><select className="form-control" value={f.cliente_id} onChange={e=>setF({...f,cliente_id:e.target.value,equipo_id:''})}><option value="">Seleccionar</option>{(extras.clientes||[]).map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>
+    <div className="form-group"><label className="form-label">Equipo *</label><select className="form-control" value={f.equipo_id} onChange={e=>setF({...f,equipo_id:e.target.value})}><option value="">Seleccionar equipo</option>{eqFilt.map(e=><option key={e.id} value={e.id}>{e.tipo} - {e.marca} {e.modelo}</option>)}</select></div>
+    <div className="form-group"><label className="form-label">Técnico</label><select className="form-control" value={f.tecnico_id} onChange={e=>setF({...f,tecnico_id:e.target.value})}><option value="">Sin asignar</option>{(extras.tecnicos||[]).map(t=><option key={t.id} value={t.id}>{t.nombre} - {t.especialidad}</option>)}</select></div>
+    <div className="form-group"><label className="form-label">Prioridad</label><select className="form-control" value={f.prioridad} onChange={e=>setF({...f,prioridad:e.target.value})}><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div>
+    <div className="form-group"><label className="form-label">Descripción</label><textarea className="form-control" value={f.descripcion} onChange={e=>setF({...f,descripcion:e.target.value})} placeholder="Descripción del problema..."/></div>
+  </Modal>;
+}
+function OrdenesPage() {
+  const [rows,setRows]=useState([]); const [clientes,setClientes]=useState([]); const [tecnicos,setTecnicos]=useState([]); const [equipos,setEquipos]=useState([]);
+  const [loading,setLoading]=useState(true); const [modal,setModal]=useState(false); const [editing,setEditing]=useState(null); const [filtro,setFiltro]=useState('todos');
+  const {usuario}=useAuth(); const isAdmin=usuario?.rol==='admin'; const isTecnico=usuario?.rol==='tecnico';
+  const load=useCallback(async()=>{ setLoading(true); try{ const reqs=[api.get('/ordenes')]; if(isAdmin)reqs.push(api.get('/clientes'),api.get('/tecnicos'),api.get('/equipos')); const [o,cl,tec,eq]=await Promise.all(reqs); setRows(o.data.data||[]); if(cl)setClientes(cl.data.data||[]); if(tec)setTecnicos(tec.data.data||[]); if(eq)setEquipos(eq.data.data||[]); }catch{toast.error('Error');}finally{setLoading(false);} },[isAdmin]);
+  useEffect(()=>{load();},[load]);
+  const setEstado=async(id,estado)=>{ try{await api.put(`/ordenes/${id}`,{estado});toast.success('Estado actualizado');load();}catch{toast.error('Error');} };
+  const del=async id=>{ if(!confirm('¿Eliminar?'))return; try{await api.delete(`/ordenes/${id}`);toast.success('Eliminada');load();}catch{toast.error('Error');} };
+  const filtradas=filtro==='todos'?rows:rows.filter(o=>o.estado===filtro);
+  return (
+    <div>
+      <div className="page-header"><div><h2 className="page-title">📋 Órdenes de Trabajo</h2><p className="page-subtitle">{filtradas.length} de {rows.length}</p></div>{(isAdmin||usuario?.rol==='cliente')&&<button className="btn btn-primary" onClick={()=>{setEditing(null);setModal(true);}}>+ Nueva Orden</button>}</div>
+      <div style={{display:'flex',gap:8,marginBottom:20,flexWrap:'wrap'}}>
+        {['todos',...ESTADOS].map(e=><button key={e} className={`btn btn-sm ${filtro===e?'btn-primary':'btn-outline'}`} onClick={()=>setFiltro(e)}>{e==='todos'?'Todos':e.replace('_',' ')}{e!=='todos'&&<span style={{marginLeft:4,opacity:.7}}>{rows.filter(o=>o.estado===e).length}</span>}</button>)}
+      </div>
+      {loading?<Loading/>:(
+        <div className="card" style={{padding:0}}>
+          {!filtradas.length?<Empty icon="📋" text="Sin órdenes"/>:(
+            <div className="table-wrapper"><table>
+              <thead><tr><th>#</th><th>Cliente</th><th>Equipo</th><th>Técnico</th><th>Prioridad</th><th>Estado</th><th>Fecha</th><th>Acción</th></tr></thead>
+              <tbody>{filtradas.map(o=>(
+                <tr key={o.id}>
+                  <td className="font-mono text-accent">#{o.id}</td>
+                  <td><strong>{o.cliente?.nombre||'—'}</strong></td>
+                  <td className="text-sm">{o.equipo?`${o.equipo.marca||''} ${o.equipo.tipo}`:'—'}</td>
+                  <td>{o.tecnico?.nombre||<span className="text-muted">Sin asignar</span>}</td>
+                  <td><span className={`badge ${o.prioridad==='alta'?'badge-cancelada':o.prioridad==='media'?'badge-en_proceso':'badge-completada'}`}>{o.prioridad}</span></td>
+                  <td>{(isAdmin||isTecnico)?<select className="form-control" style={{padding:'4px 8px',fontSize:12,width:'auto'}} value={o.estado} onChange={e=>setEstado(o.id,e.target.value)}>{ESTADOS.map(e=><option key={e} value={e}>{e.replace('_',' ')}</option>)}</select>:<span className={`badge badge-${o.estado}`}>{o.estado}</span>}</td>
+                  <td className="text-muted text-sm">{o.fecha}</td>
+                  <td><div style={{display:'flex',gap:6}}>{isAdmin&&<><button className="btn btn-outline btn-sm" onClick={()=>{setEditing(o);setModal(true);}}>✏️</button><button className="btn btn-danger btn-sm" onClick={()=>del(o.id)}>🗑️</button></>}</div></td>
+                </tr>
+              ))}</tbody>
+            </table></div>
+          )}
+        </div>
+      )}
+      {modal&&<OrdenForm editing={editing} extras={{clientes,tecnicos,equipos}} onClose={()=>setModal(false)} onSaved={()=>{setModal(false);load();}}/>}
+    </div>
+  );
+}
+
+// ─── MANTENIMIENTOS ───────────────────────────────────────────────────────────
+function MantenimientosPage() {
+  const [rows,setRows]=useState([]); const [ordenes,setOrdenes]=useState([]); const [repuestos,setRepuestos]=useState([]);
+  const [loading,setLoading]=useState(true); const [modal,setModal]=useState(false);
+  const [form,setForm]=useState({tipo:'preventivo',descripcion:'',evidencia_url:'',orden_id:'',repuestos:[]});
+  const [ri,setRi]=useState({repuesto_id:'',cantidad:1}); const [saving,setSaving]=useState(false);
+  const load=useCallback(async()=>{ setLoading(true); try{ const [m,o,r]=await Promise.all([api.get('/mantenimientos'),api.get('/ordenes'),api.get('/repuestos')]); setRows(m.data.data||[]); setOrdenes(o.data.data||[]); setRepuestos(r.data.data||[]); }catch{toast.error('Error');}finally{setLoading(false);} },[]);
+  useEffect(()=>{load();},[load]);
+  const addR=()=>{ if(!ri.repuesto_id)return; const rep=repuestos.find(r=>String(r.id)===String(ri.repuesto_id)); if(!rep)return; setForm(p=>({...p,repuestos:[...p.repuestos,{...ri,nombre:rep.nombre,costo:rep.costo}]})); setRi({repuesto_id:'',cantidad:1}); };
+  const save=async()=>{ if(!form.tipo||!form.orden_id)return toast.error('Tipo y orden requeridos'); setSaving(true); try{await api.post('/mantenimientos',form);toast.success('Registrado');setModal(false);load();}catch(e){toast.error(e.response?.data?.mensaje||'Error');}finally{setSaving(false);} };
+  const confirm_=async id=>{ try{await api.put(`/mantenimientos/${id}/confirmar`);toast.success('Confirmado');load();}catch{toast.error('Error');} };
+  const oDisp=ordenes.filter(o=>o.estado==='pendiente'||o.estado==='en_proceso');
+  return (
+    <div>
+      <div className="page-header"><div><h2 className="page-title">🛠️ Mantenimientos</h2><p className="page-subtitle">{rows.length} registros</p></div><button className="btn btn-primary" onClick={()=>{setForm({tipo:'preventivo',descripcion:'',evidencia_url:'',orden_id:'',repuestos:[]});setModal(true);}}>+ Registrar</button></div>
+      {loading?<Loading/>:(
+        <div className="card" style={{padding:0}}>
+          {!rows.length?<Empty icon="🛠️" text="Sin mantenimientos"/>:(
+            <div className="table-wrapper"><table>
+              <thead><tr><th>#</th><th>Orden</th><th>Tipo</th><th>Descripción</th><th>Evidencia</th><th>Confirmado</th><th>Fecha</th><th>Acción</th></tr></thead>
+              <tbody>{rows.map(m=><tr key={m.id}><td className="font-mono text-accent">{m.id}</td><td className="font-mono">#{m.orden_id}</td><td><span className={`badge badge-${m.tipo}`}>{m.tipo}</span></td><td className="text-sm" style={{maxWidth:200}}>{m.descripcion||'—'}</td><td>{m.evidencia_url?<a href={m.evidencia_url} target="_blank" className="text-accent text-sm">Ver</a>:'—'}</td><td><span className={`badge ${m.confirmado?'badge-completada':'badge-pendiente'}`}>{m.confirmado?'✓ Sí':'No'}</span></td><td className="text-muted text-sm">{new Date(m.fecha_realizado).toLocaleDateString()}</td><td>{!m.confirmado&&<button className="btn btn-success btn-sm" onClick={()=>confirm_(m.id)}>✓ Confirmar</button>}</td></tr>)}</tbody>
+            </table></div>
+          )}
+        </div>
+      )}
+      {modal&&<Modal title="Registrar Mantenimiento" onClose={()=>setModal(false)} wide footer={<><button className="btn btn-outline" onClick={()=>setModal(false)}>Cancelar</button><button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Guardando...':'Registrar'}</button></>}>
+        <div className="form-group"><label className="form-label">Orden *</label><select className="form-control" value={form.orden_id} onChange={e=>setForm({...form,orden_id:e.target.value})}><option value="">Seleccionar orden</option>{oDisp.map(o=><option key={o.id} value={o.id}>#{o.id} - {o.cliente?.nombre} ({o.estado})</option>)}</select></div>
+        <div className="form-group"><label className="form-label">Tipo *</label><select className="form-control" value={form.tipo} onChange={e=>setForm({...form,tipo:e.target.value})}><option value="preventivo">Preventivo</option><option value="correctivo">Correctivo</option></select></div>
+        <div className="form-group"><label className="form-label">Descripción</label><textarea className="form-control" value={form.descripcion} onChange={e=>setForm({...form,descripcion:e.target.value})} placeholder="Describe el trabajo realizado..."/></div>
+        <div className="form-group"><label className="form-label">URL de Evidencia</label><input className="form-control" value={form.evidencia_url} onChange={e=>setForm({...form,evidencia_url:e.target.value})} placeholder="https://..."/></div>
+        <div style={{background:'var(--bg3)',padding:16,borderRadius:'var(--radius-sm)'}}>
+          <p style={{fontWeight:600,marginBottom:12,fontSize:13}}>Repuestos utilizados</p>
+          <div style={{display:'flex',gap:8,marginBottom:8}}><select className="form-control" style={{flex:1}} value={ri.repuesto_id} onChange={e=>setRi({...ri,repuesto_id:e.target.value})}><option value="">Seleccionar repuesto</option>{repuestos.map(r=><option key={r.id} value={r.id}>{r.nombre} - ${Number(r.costo).toLocaleString()}</option>)}</select><input type="number" className="form-control" style={{width:70}} min="1" value={ri.cantidad} onChange={e=>setRi({...ri,cantidad:e.target.value})}/><button className="btn btn-outline" onClick={addR}>+</button></div>
+          {form.repuestos.map((r,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0',borderBottom:'1px solid var(--border)'}}><span className="text-sm">{r.nombre} × {r.cantidad}</span><div style={{display:'flex',gap:8,alignItems:'center'}}><span className="text-sm text-accent">${(Number(r.costo)*r.cantidad).toLocaleString()}</span><button className="btn btn-danger btn-sm" onClick={()=>setForm(p=>({...p,repuestos:p.repuestos.filter((_,j)=>j!==i)}))}>×</button></div></div>)}
+        </div>
+      </Modal>}
+    </div>
+  );
+}
+
+// ─── REPUESTOS ────────────────────────────────────────────────────────────────
+function RepuestoForm({editing,onClose,onSaved}) {
+  const [f,setF]=useState({nombre:editing?.nombre||'',descripcion:editing?.descripcion||'',costo:editing?.costo||'',stock:editing?.stock||''});
+  const [saving,setSaving]=useState(false);
+  const save=async()=>{ if(!f.nombre.trim())return toast.error('Nombre requerido'); setSaving(true); try{ editing?await api.put(`/repuestos/${editing.id}`,f):await api.post('/repuestos',f); toast.success(editing?'Actualizado':'Creado'); onSaved(); }catch(e){toast.error(e.response?.data?.mensaje||'Error');}finally{setSaving(false);} };
+  return <Modal title={editing?'Editar Repuesto':'Nuevo Repuesto'} onClose={onClose} footer={<><button className="btn btn-outline" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Guardando...':'Guardar'}</button></>}>
+    <div className="form-group"><label className="form-label">Nombre *</label><input className="form-control" value={f.nombre} onChange={e=>setF({...f,nombre:e.target.value})}/></div>
+    <div className="form-group"><label className="form-label">Descripción</label><textarea className="form-control" value={f.descripcion} onChange={e=>setF({...f,descripcion:e.target.value})}/></div>
+    <div className="grid grid-2"><div className="form-group"><label className="form-label">Costo ($)</label><input type="number" className="form-control" value={f.costo} onChange={e=>setF({...f,costo:e.target.value})}/></div><div className="form-group"><label className="form-label">Stock</label><input type="number" className="form-control" value={f.stock} onChange={e=>setF({...f,stock:e.target.value})}/></div></div>
+  </Modal>;
+}
+function RepuestosPage() {
+  return <CrudTable title="Repuestos" icon="⚙️" endpoint="/repuestos" FormComp={RepuestoForm}
+    cols={[{k:'id',l:'#',r:r=><span className="font-mono text-accent">{r.id}</span>},{k:'nombre',l:'Nombre',r:r=><strong>{r.nombre}</strong>},{k:'descripcion',l:'Descripción',r:r=><span className="text-sm text-muted">{r.descripcion||'—'}</span>},{k:'costo',l:'Costo',r:r=><span className="font-mono">${Number(r.costo).toLocaleString()}</span>},{k:'stock',l:'Stock',r:r=><span className={`badge ${r.stock>10?'badge-completada':r.stock>0?'badge-pendiente':'badge-cancelada'}`}>{r.stock}</span>}]}
+  />;
+}
+
+// ─── COTIZACIONES ─────────────────────────────────────────────────────────────
+function CotizacionesPage() {
+  const [rows,setRows]=useState([]); const [clientes,setClientes]=useState([]);
+  const [loading,setLoading]=useState(true); const [modal,setModal]=useState(false); const [ver,setVer]=useState(null);
+  const [form,setForm]=useState({fecha:new Date().toISOString().split('T')[0],notas:'',cliente_id:'',detalles:[]});
+  const [item,setItem]=useState({descripcion:'',cantidad:1,precio_unitario:''});
+  const [saving,setSaving]=useState(false);
+  const {usuario}=useAuth(); const isAdmin=usuario?.rol==='admin';
+  const load=useCallback(async()=>{ setLoading(true); try{ const r=[api.get('/cotizaciones')]; if(isAdmin)r.push(api.get('/clientes')); const [c,cl]=await Promise.all(r); setRows(c.data.data||[]); if(cl)setClientes(cl.data.data||[]); }catch{toast.error('Error');}finally{setLoading(false);} },[isAdmin]);
+  useEffect(()=>{load();},[load]);
+  const addI=()=>{ if(!item.descripcion||!item.precio_unitario)return toast.error('Completa el ítem'); setForm(p=>({...p,detalles:[...p.detalles,{...item}]})); setItem({descripcion:'',cantidad:1,precio_unitario:''}); };
+  const total=form.detalles.reduce((a,d)=>a+(Number(d.precio_unitario)*Number(d.cantidad)),0);
+  const save=async()=>{ if(!form.fecha||!form.cliente_id)return toast.error('Fecha y cliente requeridos'); setSaving(true); try{await api.post('/cotizaciones',form);toast.success('Cotización creada');setModal(false);load();}catch(e){toast.error(e.response?.data?.mensaje||'Error');}finally{setSaving(false);} };
+  const setEstado=async(id,estado)=>{ try{await api.put(`/cotizaciones/${id}`,{estado});toast.success('Actualizado');load();}catch{toast.error('Error');} };
+  const B={borrador:'badge-borrador',enviada:'badge-en_proceso',aprobada:'badge-completada',rechazada:'badge-cancelada'};
+  return (
+    <div>
+      <div className="page-header"><div><h2 className="page-title">💰 Cotizaciones</h2><p className="page-subtitle">{rows.length} registros</p></div>{isAdmin&&<button className="btn btn-primary" onClick={()=>{setForm({fecha:new Date().toISOString().split('T')[0],notas:'',cliente_id:'',detalles:[]});setModal(true);}}>+ Nueva</button>}</div>
+      {loading?<Loading/>:(
+        <div className="card" style={{padding:0}}>
+          {!rows.length?<Empty icon="💰" text="Sin cotizaciones"/>:(
+            <div className="table-wrapper"><table>
+              <thead><tr><th>#</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody>{rows.map(c=><tr key={c.id}><td className="font-mono text-accent">{c.id}</td><td><strong>{c.cliente?.nombre||'—'}</strong></td><td className="text-muted text-sm">{c.fecha}</td><td className="font-mono">${Number(c.total).toLocaleString()}</td><td>{isAdmin?<select className="form-control" style={{padding:'4px 8px',fontSize:12,width:'auto'}} value={c.estado} onChange={e=>setEstado(c.id,e.target.value)}>{['borrador','enviada','aprobada','rechazada'].map(e=><option key={e} value={e}>{e}</option>)}</select>:<span className={`badge ${B[c.estado]}`}>{c.estado}</span>}</td><td><button className="btn btn-outline btn-sm" onClick={()=>setVer(c)}>👁️ Ver</button></td></tr>)}</tbody>
+            </table></div>
+          )}
+        </div>
+      )}
+      {modal&&<Modal title="Nueva Cotización" onClose={()=>setModal(false)} wide footer={<><button className="btn btn-outline" onClick={()=>setModal(false)}>Cancelar</button><button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Guardando...':'Guardar'}</button></>}>
+        <div className="grid grid-2"><div className="form-group"><label className="form-label">Fecha *</label><input type="date" className="form-control" value={form.fecha} onChange={e=>setForm({...form,fecha:e.target.value})}/></div><div className="form-group"><label className="form-label">Cliente *</label><select className="form-control" value={form.cliente_id} onChange={e=>setForm({...form,cliente_id:e.target.value})}><option value="">Seleccionar</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div></div>
+        <div className="form-group"><label className="form-label">Notas</label><textarea className="form-control" value={form.notas} onChange={e=>setForm({...form,notas:e.target.value})}/></div>
+        <div style={{background:'var(--bg3)',padding:16,borderRadius:'var(--radius-sm)'}}>
+          <p style={{fontWeight:600,marginBottom:12,fontSize:13}}>Ítems</p>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 70px 110px auto',gap:8,marginBottom:8,alignItems:'end'}}><input className="form-control" placeholder="Descripción" value={item.descripcion} onChange={e=>setItem({...item,descripcion:e.target.value})}/><input type="number" className="form-control" placeholder="Cant." value={item.cantidad} onChange={e=>setItem({...item,cantidad:e.target.value})}/><input type="number" className="form-control" placeholder="Precio" value={item.precio_unitario} onChange={e=>setItem({...item,precio_unitario:e.target.value})}/><button className="btn btn-outline" onClick={addI}>+</button></div>
+          {form.detalles.map((d,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid var(--border)'}}><span className="text-sm">{d.descripcion} × {d.cantidad}</span><div style={{display:'flex',gap:8,alignItems:'center'}}><span className="text-sm text-accent">${(Number(d.precio_unitario)*d.cantidad).toLocaleString()}</span><button className="btn btn-danger btn-sm" onClick={()=>setForm(p=>({...p,detalles:p.detalles.filter((_,j)=>j!==i)}))}>×</button></div></div>)}
+          {form.detalles.length>0&&<div style={{textAlign:'right',marginTop:10,fontWeight:700}}>Total: <span className="text-accent">${total.toLocaleString()}</span></div>}
+        </div>
+      </Modal>}
+      {ver&&<Modal title={`Cotización #${ver.id}`} onClose={()=>setVer(null)} footer={<button className="btn btn-outline" onClick={()=>setVer(null)}>Cerrar</button>}>
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:16}}><div><p className="text-muted text-sm">Cliente</p><p style={{fontWeight:600}}>{ver.cliente?.nombre}</p></div><div><p className="text-muted text-sm">Fecha</p><p style={{fontWeight:600}}>{ver.fecha}</p></div><div><p className="text-muted text-sm">Estado</p><span className={`badge ${B[ver.estado]}`}>{ver.estado}</span></div></div>
+        {ver.notas&&<div style={{background:'var(--bg3)',padding:12,borderRadius:'var(--radius-sm)',marginBottom:16,fontSize:13}}>{ver.notas}</div>}
+        {ver.detalles?.length>0&&<table style={{width:'100%',borderCollapse:'collapse'}}><thead><tr>{['Descripción','Cant.','Precio','Subtotal'].map(h=><th key={h} style={{padding:'6px 4px',textAlign:h==='Descripción'?'left':'right',fontSize:12,color:'var(--text2)',borderBottom:'1px solid var(--border)'}}>{h}</th>)}</tr></thead><tbody>{ver.detalles.map(d=><tr key={d.id} style={{borderBottom:'1px solid var(--border)'}}><td style={{padding:'8px 4px',fontSize:13}}>{d.descripcion}</td><td style={{textAlign:'right',fontSize:13}}>{d.cantidad}</td><td style={{textAlign:'right',fontSize:13,fontFamily:'var(--mono)'}}>${Number(d.precio_unitario).toLocaleString()}</td><td style={{textAlign:'right',fontSize:13,fontFamily:'var(--mono)',fontWeight:600}}>${Number(d.subtotal).toLocaleString()}</td></tr>)}<tr><td colSpan={3} style={{textAlign:'right',paddingTop:12,fontWeight:700}}>TOTAL</td><td style={{textAlign:'right',paddingTop:12,fontWeight:700,fontSize:16,fontFamily:'var(--mono)',color:'var(--accent)'}}>${Number(ver.total).toLocaleString()}</td></tr></tbody></table>}
+      </Modal>}
+    </div>
+  );
+}
+
+// ─── APP ROOT ─────────────────────────────────────────────────────────────────
+const ALLOWED={admin:['dashboard','clientes','tecnicos','equipos','ordenes','mantenimientos','repuestos','cotizaciones'],tecnico:['ordenes','mantenimientos'],cliente:['ordenes','equipos','cotizaciones']};
+const PAGES={dashboard:DashboardPage,clientes:ClientesPage,tecnicos:TecnicosPage,equipos:EquiposPage,ordenes:OrdenesPage,mantenimientos:MantenimientosPage,repuestos:RepuestosPage,cotizaciones:CotizacionesPage};
+
+function AppInner() {
+  const {usuario,loading}=useAuth();
+  const {page,go}=useRoute();
+  if(loading) return <div className="loading-page"><div className="spinner" style={{width:40,height:40}}/></div>;
+  if(!usuario) return <LoginPage/>;
+  const allowed=ALLOWED[usuario.rol]||[];
+  const safePage=allowed.includes(page)?page:allowed[0];
+  const PageComp=PAGES[safePage]||OrdenesPage;
+  return <div className="app-layout"><Sidebar page={safePage} go={go}/><main className="main-content"><PageComp/></main></div>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <ToastProvider><AuthProvider><AppInner/></AuthProvider></ToastProvider>
+);
+</script>
+</body>
+</html>
