@@ -38,35 +38,38 @@ export default function OrdenesPage() {
   const isTecnico = usuario?.rol === 'tecnico'
   const isCliente = usuario?.rol === 'cliente'
 
-  const load = () => {
+  const load = async () => {
     setLoading(true)
-    const reqs = [api.get('/ordenes')]
-    if (isAdmin) {
-      reqs.push(api.get('/clientes'), api.get('/tecnicos'), api.get('/equipos'))
-    } else if (isCliente) {
-      reqs.push(api.get('/auth/me'))
-    }
+    try {
+      const ordRes = await api.get('/ordenes')
+      setOrdenes(ordRes.data.data || [])
 
-    Promise.all(reqs).then(async ([ord, second, tec, eq]) => {
-      setOrdenes(ord.data.data || [])
       if (isAdmin) {
-        setClientes(second?.data?.data || [])
-        setTecnicos(tec?.data?.data || [])
-        setEquipos(eq?.data?.data || [])
-      } else if (isCliente && second) {
-        const perfilId = second.data?.perfil?.id
+        const [clientesRes, tecnicosRes, equiposRes] = await Promise.all([
+          api.get('/clientes'),
+          api.get('/tecnicos'),
+          api.get('/equipos')
+        ])
+        setClientes(clientesRes.data.data || [])
+        setTecnicos(tecnicosRes.data.data || [])
+        setEquipos(equiposRes.data.data || [])
+      } else if (isCliente) {
+        const meRes = await api.get('/auth/me')
+        const perfilId = meRes.data?.perfil?.id
         setMiPerfilId(perfilId)
         if (perfilId) {
           const eqRes = await api.get('/equipos')
           setEquipos(eqRes.data.data || [])
         }
-      } else if (isTecnico) {
-        // Técnicos solo ven, no crean
       }
-    }).catch(() => toast.error('Error cargando datos')).finally(() => setLoading(false))
+    } catch (err) {
+      toast.error('Error cargando datos')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { if (usuario) load() }, [usuario])
 
   const equiposFiltrados = isCliente
     ? equipos
