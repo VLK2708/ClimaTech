@@ -54,13 +54,19 @@ export default function OrdenesPage() {
         setTecnicos(tecnicosRes.data.data || [])
         setEquipos(equiposRes.data.data || [])
       } else if (isCliente) {
-        const meRes = await api.get('/auth/me')
+        const [meRes, tecnicosRes, eqRes] = await Promise.all([
+          api.get('/auth/me'),
+          api.get('/tecnicos'),
+          api.get('/equipos')
+        ])
         const perfilId = meRes.data?.perfil?.id
+        const perfilNombre = meRes.data?.perfil?.nombre
         setMiPerfilId(perfilId)
         if (perfilId) {
-          const eqRes = await api.get('/equipos')
-          setEquipos(eqRes.data.data || [])
+          setClientes([{ id: perfilId, nombre: perfilNombre || 'Mi cuenta' }])
         }
+        setTecnicos(tecnicosRes.data.data || [])
+        setEquipos(eqRes.data.data || [])
       }
     } catch (err) {
       toast.error('Error cargando datos')
@@ -270,16 +276,20 @@ export default function OrdenesPage() {
                 </div>
               </div>
 
-              {isAdmin && (
-                <div className="form-group">
-                  <label className="form-label">Cliente *</label>
+              <div className="form-group">
+                <label className="form-label">Cliente *</label>
+                {isCliente ? (
+                  <select className="form-control" value={form.cliente_id} disabled>
+                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                ) : (
                   <select className="form-control" value={form.cliente_id}
                     onChange={e => setForm({ ...form, cliente_id: e.target.value, equipo_id: '' })}>
                     <option value="">Seleccionar cliente</option>
                     {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="form-group">
                 <label className="form-label">Equipo *</label>
@@ -292,18 +302,16 @@ export default function OrdenesPage() {
                 </select>
               </div>
 
-              {isAdmin && (
-                <div className="form-group">
-                  <label className="form-label">Técnico asignado</label>
-                  <select className="form-control" value={form.tecnico_id}
-                    onChange={e => setForm({ ...form, tecnico_id: e.target.value })}>
-                    <option value="">Sin asignar</option>
-                    {tecnicos.map(t => (
-                      <option key={t.id} value={t.id}>{t.nombre} - {t.especialidad}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              <div className="form-group">
+                <label className="form-label">Técnico</label>
+                <select className="form-control" value={form.tecnico_id}
+                  onChange={e => setForm({ ...form, tecnico_id: e.target.value })}>
+                  <option value="">Sin asignar</option>
+                  {tecnicos.map(t => (
+                    <option key={t.id} value={t.id}>{t.nombre} - {t.especialidad}</option>
+                  ))}
+                </select>
+              </div>
 
               <div className="form-group">
                 <label className="form-label">Prioridad</label>
