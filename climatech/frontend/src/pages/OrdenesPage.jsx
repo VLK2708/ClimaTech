@@ -41,32 +41,47 @@ export default function OrdenesPage() {
   const load = async () => {
     setLoading(true)
     try {
+      // 1. Órdenes - siempre
       const ordRes = await api.get('/ordenes')
       setOrdenes(ordRes.data.data || [])
 
-      if (isAdmin) {
-        const [clientesRes, tecnicosRes, equiposRes] = await Promise.all([
-          api.get('/clientes'),
-          api.get('/tecnicos'),
-          api.get('/equipos')
-        ])
-        setClientes(clientesRes.data.data || [])
+      // 2. Técnicos - ruta abierta a todos los roles autenticados
+      try {
+        const tecnicosRes = await api.get('/tecnicos')
         setTecnicos(tecnicosRes.data.data || [])
+      } catch { /* silenciar */ }
+
+      // 3. Equipos - backend filtra por cliente automáticamente
+      try {
+        const equiposRes = await api.get('/equipos')
         setEquipos(equiposRes.data.data || [])
+      } catch { /* silenciar */ }
+
+      if (isAdmin) {
+        // Admin: cargar todos los clientes
+        try {
+          const clientesRes = await api.get('/clientes')
+          setClientes(clientesRes.data.data || [])
+        } catch { /* silenciar */ }
       } else if (isCliente) {
-        const [meRes, tecnicosRes, eqRes] = await Promise.all([
-          api.get('/auth/me'),
-          api.get('/tecnicos'),
-          api.get('/equipos')
-        ])
-        const perfilId = meRes.data?.perfil?.id
-        const perfilNombre = meRes.data?.perfil?.nombre
-        setMiPerfilId(perfilId)
+        // Cliente: usar perfil_id que viene en el objeto usuario del login
+        const perfilId = usuario?.perfil_id
+        const nombre = usuario?.nombre || 'Mi cuenta'
         if (perfilId) {
-          setClientes([{ id: perfilId, nombre: perfilNombre || 'Mi cuenta' }])
+          setMiPerfilId(perfilId)
+          setClientes([{ id: perfilId, nombre }])
+        } else {
+          // Fallback: pedir /auth/me si perfil_id no está disponible
+          try {
+            const meRes = await api.get('/auth/me')
+            const id = meRes.data?.perfil?.id
+            const nom = meRes.data?.perfil?.nombre || nombre
+            if (id) {
+              setMiPerfilId(id)
+              setClientes([{ id, nombre: nom }])
+            }
+          } catch { /* silenciar */ }
         }
-        setTecnicos(tecnicosRes.data.data || [])
-        setEquipos(eqRes.data.data || [])
       }
     } catch (err) {
       toast.error('Error cargando datos')
@@ -79,11 +94,16 @@ export default function OrdenesPage() {
 
   const equiposFiltrados = isCliente
     ? equipos
-    : (form.cliente_id ? equipos.filter(e => String(e.cliente_id) === String(form.cliente_id)) : equipos)
+    : (form.cliente_id
+        ? equipos.filter(e => String(e.cliente_id) === String(form.cliente_id))
+        : equipos)
 
   const openCreate = () => {
     const empty = makeEmpty()
-    if (isCliente && miPerfilId) empty.cliente_id = miPerfilId
+    if (isCliente) {
+      const pid = miPerfilId || usuario?.perfil_id
+      if (pid) empty.cliente_id = String(pid)
+    }
     setForm(empty)
     setEditing(null)
     setModal(true)
@@ -119,7 +139,7 @@ export default function OrdenesPage() {
       setModal(false)
       load()
     } catch (err) {
-      toast.error(err.response?.data?.mensaje || 'Error')
+      toast.error(err.response?.data?.mensaje || 'Error al guardar')
     } finally {
       setSaving(false)
     }
@@ -160,7 +180,6 @@ export default function OrdenesPage() {
         )}
       </div>
 
-      {/* Filtros */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {['todos', ...ESTADOS].map(e => (
           <button
@@ -280,13 +299,18 @@ export default function OrdenesPage() {
                 <label className="form-label">Cliente *</label>
                 {isCliente ? (
                   <select className="form-control" value={form.cliente_id} disabled>
-                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    <option value="">Sin cliente</option>
+                    {clientes.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
                   </select>
                 ) : (
                   <select className="form-control" value={form.cliente_id}
                     onChange={e => setForm({ ...form, cliente_id: e.target.value, equipo_id: '' })}>
                     <option value="">Seleccionar cliente</option>
-                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    {clientes.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
                   </select>
                 )}
               </div>
